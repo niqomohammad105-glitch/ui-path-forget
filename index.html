@@ -8,6 +8,9 @@
 </head>
 <body>
 
+  <!-- Container Popup Notifikasi Melayang (Toast) -->
+  <div id="toastContainer" class="toast-container"></div>
+
   <header class="top-bar">
     <div class="brand">
       <div class="brand-badge">RPA // UIPATH</div>
@@ -17,35 +20,51 @@
       </div>
     </div>
 
+    <!-- Statistik Real-Time -->
+    <div class="stats-bar">
+      <div class="stat-box">
+        <span class="stat-label">TOTAL ANTREAN</span>
+        <strong id="statTotal">15</strong>
+      </div>
+      <div class="stat-box stat-accepted">
+        <span class="stat-label">DITERIMA (VALID)</span>
+        <strong id="statValid">0</strong>
+      </div>
+      <div class="stat-box stat-rejected">
+        <span class="stat-label">DITOLAK (INVALID)</span>
+        <strong id="statInvalid">0</strong>
+      </div>
+    </div>
+
     <div class="header-actions">
       <div class="status-pill">
         <span class="pulse-dot" id="statusDot"></span>
         <span id="robotStatusText">SYSTEM IDLE // READY</span>
       </div>
-      <button class="btn btn-accent" id="btnAutoRun">Jalankan Antrean Robot (Auto-Loop)</button>
+      <button class="btn btn-accent" id="btnAutoRun">Jalankan Antrean Robot (15 Data)</button>
     </div>
   </header>
 
   <main class="workspace-grid">
-    <!-- Kolom Kiri: Kontrol Arguments & Log Eksekusi -->
+    <!-- Kolom Kiri: Kontrol Arguments, Riwayat Notifikasi & Log -->
     <aside class="left-column">
       <section class="card">
         <div class="card-header">
           <h2>1. UiPath In_Arguments</h2>
-          <span class="caption">Klik baris tabel atau ubah manual</span>
+          <span class="caption">Klik baris tabel atau uji manual</span>
         </div>
 
         <form id="argumentForm" class="form-stack">
           <div class="form-row">
             <div class="form-group">
               <label for="in_RowIndex">in_RowIndex (Int32)</label>
-              <input type="number" id="in_RowIndex" value="2" min="2" max="6">
+              <input type="number" id="in_RowIndex" value="2" min="2" max="16">
             </div>
             <div class="form-group">
               <label for="in_StatusVerifikasi">in_StatusVerifikasi</label>
               <select id="in_StatusVerifikasi">
-                <option value="Valid">Valid</option>
-                <option value="Tidak Valid">Tidak Valid</option>
+                <option value="Valid">Valid (Diterima)</option>
+                <option value="Tidak Valid">Tidak Valid (Ditolak)</option>
               </select>
             </div>
           </div>
@@ -74,10 +93,29 @@
           </div>
 
           <div class="btn-row">
-            <button type="button" class="btn btn-accent" id="btnExecuteSingle">Update Baris & Kirim Email</button>
+            <button type="button" class="btn btn-accent" id="btnExecuteSingle">Kirim Update & Notifikasi</button>
             <button type="button" class="btn btn-secondary" id="btnValidateNik">Auto-Cek NIK</button>
           </div>
+
+          <div class="btn-row">
+            <button type="button" class="btn btn-secondary btn-sm" id="btnSimAccept" style="flex:1;">Uji Notif Diterima</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnSimReject" style="flex:1;">Uji Notif Ditolak</button>
+          </div>
         </form>
+      </section>
+
+      <!-- Feed Notifikasi Email Diterima & Ditolak -->
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <h2>Riwayat Notifikasi Email Terkirim</h2>
+            <p class="caption">Log pengiriman status Diterima & Ditolak</p>
+          </div>
+          <button type="button" class="btn-text" id="btnClearNotif">Bersihkan</button>
+        </div>
+        <div id="notifFeed" class="notif-feed">
+          <!-- Diisi otomatis saat notifikasi terkirim -->
+        </div>
       </section>
 
       <section class="card">
@@ -92,14 +130,20 @@
     <!-- Kolom Kanan: Google Sheets Simulator, Email Preview & VB.NET Code -->
     <section class="right-column">
       
-      <!-- Tabel Simulasi Google Sheets -->
+      <!-- Tabel Simulasi Google Sheets (15 Pendaftar) -->
       <div class="card">
         <div class="card-header">
           <div>
-            <h2>2. Live Google Sheets Simulator (Data_Pendaftar)</h2>
-            <p class="caption">Klik salah satu baris untuk memuat data ke panel Arguments di kiri</p>
+            <h2>2. Live Google Sheets Simulator (15 Pendaftar Bansos)</h2>
+            <p class="caption">Klik baris mana saja untuk memuat data ke panel Arguments & melihat pratinjau email</p>
           </div>
-          <button type="button" class="btn btn-secondary btn-sm" id="btnResetSheets">Reset Data</button>
+          <div class="filter-group">
+            <button type="button" class="filter-btn active" data-filter="ALL">Semua</button>
+            <button type="button" class="filter-btn" data-filter="Valid">Diterima</button>
+            <button type="button" class="filter-btn" data-filter="Tidak Valid">Ditolak</button>
+            <button type="button" class="filter-btn" data-filter="Menunggu">Menunggu</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnResetSheets">Reset</button>
+          </div>
         </div>
 
         <div class="table-container">
@@ -107,10 +151,10 @@
             <thead>
               <tr>
                 <th>Row</th>
-                <th>Kolom B: Nama</th>
-                <th>Kolom C: Email</th>
+                <th>Kolom B: Nama Warga</th>
+                <th>Kolom C: Email Tujuan</th>
                 <th>Kolom D: NIK (AI OCR)</th>
-                <th>Kolom G: Status</th>
+                <th>Kolom G: Status Verifikasi</th>
                 <th>Kolom H: Catatan AI</th>
               </tr>
             </thead>
@@ -125,7 +169,8 @@
       <div class="split-panel">
         <div class="card">
           <div class="card-header">
-            <h2>3. Live Preview Gmail (HTML Body)</h2>
+            <h2>3. Live Preview Gmail (Diterima / Ditolak)</h2>
+            <span id="emailModeTag" class="badge badge-valid">MODE: DITERIMA</span>
           </div>
 
           <div class="email-envelope">
