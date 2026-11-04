@@ -1,177 +1,165 @@
-const initialSheetData = [
-  { row: 2, nama: "Budi Santoso", email: "budi.santoso@warga.id", nik: "6306051204980001", status: "Valid", catatan: "16 digit NIK valid sesuai Dukcapil." },
-  { row: 3, nama: "Siti Aminah", email: "siti.aminah@warga.id", nik: "6306055408990002", status: "Valid", catatan: "16 digit NIK valid sesuai Dukcapil." },
-  { row: 4, nama: "Ahmad Fauzi", email: "ahmad.fauzi@warga.id", nik: "63060519001", status: "Tidak Valid", catatan: "DITOLAK: OCR hanya membaca 11 digit." },
-  { row: 5, nama: "Rina Kartika", email: "rina.kartika@warga.id", nik: "6306054509010004", status: "Menunggu", catatan: "Menunggu antrean..." },
-  { row: 6, nama: "Hendra Wijaya", email: "hendra.wijaya@warga.id", nik: "630605010188000X", status: "Tidak Valid", catatan: "DITOLAK: Karakter huruf 'X' pada NIK." },
-  { row: 7, nama: "Dewi Lestari", email: "dewi.lestari@warga.id", nik: "6306056211950003", status: "Menunggu", catatan: "Menunggu antrean..." },
-  { row: 8, nama: "Muhammad Rizky", email: "m.rizky@warga.id", nik: "6306051807020005", status: "Valid", catatan: "16 digit NIK valid sesuai Dukcapil." },
-  { row: 9, nama: "Nurul Hidayah", email: "nurul.hidayah@warga.id", nik: "6306054903", status: "Menunggu", catatan: "Menunggu antrean..." },
-  { row: 10, nama: "Eko Prasetyo", email: "eko.prasetyo@warga.id", nik: "6306052910870007", status: "Menunggu", catatan: "Menunggu antrean..." },
-  { row: 11, nama: "Fitriani Rahma", email: "fitri.rahma@warga.id", nik: "", status: "Tidak Valid", catatan: "DITOLAK: NIK kosong." },
-  { row: 12, nama: "Agus Setiawan", email: "agus.setiawan@warga.id", nik: "6306050412910009", status: "Menunggu", catatan: "Menunggu antrean..." },
-  { row: 13, nama: "Ratna Sari", email: "ratna.sari@warga.id", nik: "6306056705960010", status: "Menunggu", catatan: "Menunggu antrean..." },
-  { row: 14, nama: "Dimas Anggara", email: "dimas.anggara@warga.id", nik: "63060511029400B2", status: "Menunggu", catatan: "Menunggu antrean..." },
-  { row: 15, nama: "Lina Marlina", email: "lina.marlina@warga.id", nik: "6306055908900012", status: "Menunggu", catatan: "Menunggu antrean..." },
-  { row: 16, nama: "Wahyu Saputra", email: "wahyu.saputra@warga.id", nik: "6306052106", status: "Menunggu", catatan: "Menunggu antrean..." }
-];
+/* ==========================================================================
+   ATURAN 3 PALET WARNA (60-30-10) & UI SUPER SIMPEL / LEGA
+   1. Dominan (60%)  : #090D16 & #111827 (Background & Panel)
+   2. Sekunder (30%) : #F3F4F6 & #6B7280 (Teks & Garis Halus)
+   3. Aksen (10%)    : #10B981 (Emerald untuk Aksi & Status)
+   ========================================================================== */
 
-let sheetData = JSON.parse(JSON.stringify(initialSheetData));
-let currentFilter = "ALL";
-let activeRowNumber = 2;
-let isCodeView = false;
+:root {
+  --bg-main: #090d16;
+  --bg-panel: #111827;
+  --bg-input: #1f2937;
+  --border-color: #374151;
+  
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-soft: rgba(16, 185, 129, 0.12);
+  
+  --rose: #ef4444;
+  --rose-soft: rgba(239, 68, 68, 0.12);
 
-const dom = {
-  sheetsBody: document.getElementById("sheetsTableBody"),
-  countValid: document.getElementById("countValid"),
-  countInvalid: document.getElementById("countInvalid"),
-  detailTitle: document.getElementById("detailTitle"),
-  nama: document.getElementById("in_NamaPendaftar"),
-  email: document.getElementById("in_EmailPendaftar"),
-  nik: document.getElementById("in_NIK_KTP"),
-  status: document.getElementById("in_StatusVerifikasi"),
-  catatan: document.getElementById("in_CatatanAI"),
-  emailRenderBox: document.getElementById("emailRenderBox"),
-  vbExpressionBox: document.getElementById("vbExpressionBox"),
-  toastContainer: document.getElementById("toastContainer"),
-  btnExecuteSingle: document.getElementById("btnExecuteSingle"),
-  btnSimAccept: document.getElementById("btnSimAccept"),
-  btnSimReject: document.getElementById("btnSimReject"),
-  btnAutoRun: document.getElementById("btnAutoRun"),
-  btnResetData: document.getElementById("btnResetData"),
-  btnCopyVb: document.getElementById("btnCopyVb")
-};
-
-function updateStats() {
-  dom.countValid.textContent = sheetData.filter(r => r.status === "Valid").length;
-  dom.countInvalid.textContent = sheetData.filter(r => r.status === "Tidak Valid").length;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', Consolas, monospace;
 }
 
-function showToast(nama, status, catatan) {
-  const isAccepted = status === "Valid";
-  const toast = document.createElement("div");
-  toast.className = `toast ${isAccepted ? "toast-accepted" : "toast-rejected"}`;
-  toast.innerHTML = `
-    <span class="toast-title">${isAccepted ? "EMAIL DITERIMA TERKIRIM" : "EMAIL DITOLAK TERKIRIM"}</span>
-    <strong>${nama}</strong>
-    <span style="color:var(--text-muted); font-size:0.72rem;">${catatan}</span>
-  `;
-  dom.toastContainer.prepend(toast);
-  setTimeout(() => toast.remove(), 3200);
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  padding: 32px;
+  min-height: 100vh;
 }
 
-function renderTable() {
-  dom.sheetsBody.innerHTML = "";
-  const filtered = sheetData.filter(item => currentFilter === "ALL" || item.status === currentFilter);
+/* Toast Melayang */
+.toast-container {
+  position: fixed; top: 24px; right: 24px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px; width: 320px; pointer-events: none;
+}
+.toast {
+  pointer-events: auto; background-color: var(--bg-panel); border: 1px solid var(--border-color);
+  padding: 14px 16px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  display: flex; flex-direction: column; gap: 3px; font-size: 0.8rem;
+}
+.toast-accepted { border-left: 4px solid var(--accent); }
+.toast-rejected { border-left: 4px solid var(--rose); }
+.toast-title { font-family: var(--font-mono); font-weight: 700; font-size: 0.7rem; }
+.toast-accepted .toast-title { color: var(--accent); }
+.toast-rejected .toast-title { color: var(--rose); }
 
-  filtered.forEach(item => {
-    const tr = document.createElement("tr");
-    if (item.row === activeRowNumber) tr.classList.add("selected-row");
-
-    let badgeClass = "badge badge-pending";
-    let statusText = item.status;
-    if (item.status === "Valid") { badgeClass = "badge badge-valid"; statusText = "Terima"; }
-    else if (item.status === "Tidak Valid") { badgeClass = "badge badge-invalid"; statusText = "Tolak"; }
-
-    tr.innerHTML = `
-      <td>#${item.row}</td>
-      <td><strong>${item.nama}</strong></td>
-      <td>${item.nik || "Kosong"}</td>
-      <td><span class="${badgeClass}">${statusText}</span></td>
-    `;
-    tr.addEventListener("click", () => loadRow(item.row));
-    dom.sheetsBody.appendChild(tr);
-  });
-  updateStats();
+/* App Container */
+.app-container {
+  max-width: 1300px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-function loadRow(rowNum) {
-  const item = sheetData.find(r => r.row === rowNum);
-  if (!item) return;
+/* Header */
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  background-color: var(--bg-panel); border: 1px solid var(--border-color);
+  padding: 20px 28px; border-radius: 12px;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.badge-tag {
+  background-color: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent);
+  font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 4px;
+}
+.header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; }
 
-  activeRowNumber = rowNum;
-  dom.detailTitle.textContent = `Baris #${rowNum} — ${item.nama}`;
-  dom.nama.value = item.nama;
-  dom.email.value = item.email;
-  dom.nik.value = item.nik;
-  dom.status.value = item.status === "Menunggu" ? "Valid" : item.status;
-  dom.catatan.value = item.catatan;
+.header-right { display: flex; align-items: center; gap: 16px; }
+.counter-pill {
+  background-color: var(--bg-input); border: 1px solid var(--border-color);
+  padding: 8px 16px; border-radius: 8px; font-family: var(--font-mono); font-size: 0.8rem;
+  display: flex; gap: 8px; align-items: center; color: var(--text-muted);
+}
+.text-emerald { color: var(--accent); font-weight: 700; }
+.text-rose { color: var(--rose); font-weight: 700; }
+.divider { color: var(--border-color); }
 
-  updatePreview();
-  renderTable();
+/* Main Layout */
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 24px;
+}
+@media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; } }
+
+/* Panel */
+.panel {
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.panel-header {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.panel-header h2 {
+  font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
 }
 
-function updatePreview() {
-  const isAccepted = dom.status.value === "Valid";
-  dom.emailRenderBox.innerHTML = `
-    <div style="font-family:Arial; color:#0f172a;">
-      <strong>PENGUMUMAN BANSOS — ${isAccepted ? "DISETUJUI" : "DITOLAK"}</strong>
-      <p style="margin:8px 0;">Halo <b>${dom.nama.value}</b>,</p>
-      <p style="margin-bottom:8px;">${isAccepted ? "Pengajuan Bansos Anda telah disetujui." : "Mohon maaf, pengajuan Bansos Anda ditolak."}</p>
-      <div style="font-size:11px; color:#64748b;">NIK: ${dom.nik.value || "-"} | Catatan: ${dom.catatan.value}</div>
-    </div>
-  `;
-  dom.vbExpressionBox.textContent = `"<div style='font-family:Arial;padding:16px;'><strong>BANSOS ${isAccepted ? "DISETUJUI" : "DITOLAK"}</strong><p>Halo " + in_NamaPendaftar + "</p><p>Catatan: " + in_CatatanAI + "</p></div>"`;
+/* Filters & Chips */
+.filters { display: flex; gap: 6px; }
+.chip {
+  background-color: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-color);
+  padding: 5px 10px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.7rem; cursor: pointer;
 }
+.chip.active { background-color: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 600; }
 
-function executeAction() {
-  const item = sheetData.find(r => r.row === activeRowNumber);
-  if (!item) return;
+/* Table */
+.table-wrapper { max-height: 480px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.78rem; text-align: left; }
+th { position: sticky; top: 0; background-color: var(--bg-input); color: var(--text-muted); padding: 10px 12px; border-bottom: 1px solid var(--border-color); }
+td { padding: 11px 12px; border-bottom: 1px solid var(--border-color); }
+tr { cursor: pointer; transition: background 0.1s; }
+tr:hover { background-color: rgba(255,255,255,0.02); }
+tr.selected-row { background-color: var(--accent-soft); }
 
-  item.nama = dom.nama.value;
-  item.email = dom.email.value;
-  item.nik = dom.nik.value;
-  item.status = dom.status.value;
-  item.catatan = dom.catatan.value;
+.badge { padding: 3px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
+.badge-valid { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); }
+.badge-invalid { background: var(--rose-soft); color: var(--rose); border: 1px solid var(--rose); }
+.badge-pending { color: var(--text-muted); border: 1px solid var(--border-color); }
 
-  renderTable();
-  updatePreview();
-  showToast(item.nama, item.status, item.catatan);
+/* Detail Form & Preview */
+.detail-content { display: flex; flex-direction: column; gap: 14px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); }
+.mt-2 { margin-top: 4px; }
+
+input, select {
+  background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main);
+  padding: 9px 12px; border-radius: 8px; font-family: var(--font-mono); font-size: 0.8rem; outline: none;
 }
+input:focus, select:focus { border-color: var(--accent); }
 
-async function runAutoLoop() {
-  dom.btnAutoRun.disabled = true;
-  for (const item of sheetData) {
-    loadRow(item.row);
-    if(item.status === "Menunggu") {
-      item.status = item.nik.length === 16 ? "Valid" : "Tidak Valid";
-      item.catatan = item.status === "Valid" ? "Valid sesuai Dukcapil." : "Ditolak: NIK tidak lengkap.";
-    }
-    executeAction();
-    await new Promise(r => setTimeout(r, 400));
-  }
-  dom.btnAutoRun.disabled = false;
+/* Action Bar */
+.action-bar { display: flex; gap: 8px; margin-top: 4px; }
+.btn {
+  padding: 10px 16px; border-radius: 8px; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; cursor: pointer; border: none; transition: 0.1s;
 }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background-color: var(--accent); color: var(--bg-main); flex: 1; }
+.btn-primary:hover { background-color: var(--accent-hover); }
+.btn-subtle { background-color: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); }
+.btn-subtle:hover { border-color: var(--accent); color: var(--accent); }
+.btn-text { background: none; border: none; color: var(--text-muted); font-size: 0.75rem; cursor: pointer; font-family: var(--font-mono); }
+.btn-text:hover { color: var(--accent); }
 
-// Event Listeners
-[dom.nama, dom.email, dom.nik, dom.status, dom.catatan].forEach(el => el.addEventListener("input", updatePreview));
-
-dom.btnExecuteSingle.addEventListener("click", executeAction);
-dom.btnSimAccept.addEventListener("click", () => { dom.status.value = "Valid"; dom.catatan.value = "Diterima otomatis."; executeAction(); });
-dom.btnSimReject.addEventListener("click", () => { dom.status.value = "Tidak Valid"; dom.catatan.value = "Ditolak otomatis."; executeAction(); });
-dom.btnAutoRun.addEventListener("click", runAutoLoop);
-dom.btnResetData.addEventListener("click", () => { sheetData = JSON.parse(JSON.stringify(initialSheetData)); loadRow(2); });
-
-dom.btnCopyVb.addEventListener("click", () => {
-  if(!isCodeView) {
-    dom.emailRenderBox.style.display = "none";
-    dom.vbExpressionBox.style.display = "block";
-    dom.btnCopyVb.textContent = "Salin Teks VB.NET";
-    isCodeView = true;
-  } else {
-    navigator.clipboard.writeText(dom.vbExpressionBox.textContent);
-    dom.btnCopyVb.textContent = "Disalin!";
-    setTimeout(() => dom.btnCopyVb.textContent = "Pratinjau Email", 1200);
-  }
-});
-
-document.querySelectorAll(".chip").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".chip").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentFilter = btn.getAttribute("data-filter");
-    renderTable();
-  });
-});
-
-loadRow(2);
+/* Preview Box */
+.preview-box { background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.preview-tabs { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); }
+.email-preview { background: #ffffff; color: #0f172a; padding: 16px; border-radius: 6px; font-size: 0.8rem; max-height: 220px; overflow-y: auto; }
+.code-preview { background: var(--bg-main); color: var(--text-main); padding: 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.72rem; max-height: 220px; overflow-y: auto; }
