@@ -1,203 +1,596 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UiPath Bansos RPA — Output & Notification Hub</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
+/* ==========================================================================
+   ATURAN 3 PALET WARNA (60-30-10 RULE)
+   1. Dominan (60%)  : Deep Slate (#0F172A & #1E293B) - Background & Card
+   2. Sekunder (30%) : Crisp Alabaster (#F8FAFC & #94A3B8) - Tipografi & Struktur
+   3. Aksen (10%)    : Cyber Emerald (#10B981) - Interaksi, Highlight & Status
+   ========================================================================== */
 
-  <!-- Container Popup Notifikasi Melayang (Toast) -->
-  <div id="toastContainer" class="toast-container"></div>
+:root {
+  /* Palet 1: Dominan (Deep Slate) */
+  --bg-main: #0f172a;
+  --bg-surface: #1e293b;
+  --bg-elevated: #0b1120;
+  --border-slate: #334155;
 
-  <header class="top-bar">
-    <div class="brand">
-      <div class="brand-badge">RPA // UIPATH</div>
-      <div>
-        <h1>Bansos Verification & Notification Console</h1>
-        <p>Module: UpdateAndNotify_Bansos.xaml (Google Sheets + Gmail API)</p>
-      </div>
-    </div>
+  /* Palet 2: Sekunder (Crisp Alabaster) */
+  --text-light: #f8fafc;
+  --text-muted: #94a3b8;
 
-    <!-- Statistik Real-Time -->
-    <div class="stats-bar">
-      <div class="stat-box">
-        <span class="stat-label">TOTAL ANTREAN</span>
-        <strong id="statTotal">15</strong>
-      </div>
-      <div class="stat-box stat-accepted">
-        <span class="stat-label">DITERIMA (VALID)</span>
-        <strong id="statValid">0</strong>
-      </div>
-      <div class="stat-box stat-rejected">
-        <span class="stat-label">DITOLAK (INVALID)</span>
-        <strong id="statInvalid">0</strong>
-      </div>
-    </div>
+  /* Palet 3: Aksen (Cyber Emerald) */
+  --accent-emerald: #10b981;
+  --accent-emerald-hover: #059669;
+  --accent-emerald-soft: rgba(16, 185, 129, 0.14);
 
-    <div class="header-actions">
-      <div class="status-pill">
-        <span class="pulse-dot" id="statusDot"></span>
-        <span id="robotStatusText">SYSTEM IDLE // READY</span>
-      </div>
-      <button class="btn btn-accent" id="btnAutoRun">Jalankan Antrean Robot (15 Data)</button>
-    </div>
-  </header>
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+}
 
-  <main class="workspace-grid">
-    <!-- Kolom Kiri: Kontrol Arguments, Riwayat Notifikasi & Log -->
-    <aside class="left-column">
-      <section class="card">
-        <div class="card-header">
-          <h2>1. UiPath In_Arguments</h2>
-          <span class="caption">Klik baris tabel atau uji manual</span>
-        </div>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-        <form id="argumentForm" class="form-stack">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="in_RowIndex">in_RowIndex (Int32)</label>
-              <input type="number" id="in_RowIndex" value="2" min="2" max="16">
-            </div>
-            <div class="form-group">
-              <label for="in_StatusVerifikasi">in_StatusVerifikasi</label>
-              <select id="in_StatusVerifikasi">
-                <option value="Valid">Valid (Diterima)</option>
-                <option value="Tidak Valid">Tidak Valid (Ditolak)</option>
-              </select>
-            </div>
-          </div>
+body {
+  background-color: var(--bg-main);
+  color: var(--text-light);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  padding: 20px 28px;
+  min-height: 100vh;
+}
 
-          <div class="form-group">
-            <label for="in_NamaPendaftar">in_NamaPendaftar (String)</label>
-            <input type="text" id="in_NamaPendaftar" value="Budi Santoso">
-          </div>
+/* Toast Notification Melayang (Diterima & Ditolak) */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 380px;
+  width: 100%;
+  pointer-events: none;
+}
 
-          <div class="form-group">
-            <label for="in_EmailPendaftar">in_EmailPendaftar (String)</label>
-            <input type="email" id="in_EmailPendaftar" value="budi.santoso@warga.id">
-          </div>
+.toast {
+  pointer-events: auto;
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-slate);
+  padding: 14px 16px;
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: slideIn 0.22s ease-out;
+}
 
-          <div class="form-group">
-            <label for="in_NIK_KTP">
-              <span>in_NIK_KTP (Hasil OCR Document Understanding)</span>
-              <span id="nikCounter" class="counter-tag">16/16 Digit</span>
-            </label>
-            <input type="text" id="in_NIK_KTP" value="6306051204980001" maxlength="16">
-          </div>
+.toast-accepted {
+  border-left: 4px solid var(--accent-emerald);
+}
 
-          <div class="form-group">
-            <label for="in_CatatanAI">in_CatatanAI (String)</label>
-            <textarea id="in_CatatanAI" rows="2">16 digit NIK terverifikasi jelas & sesuai database dukcapil.</textarea>
-          </div>
+.toast-rejected {
+  border-left: 4px solid var(--text-light);
+  border-style: solid;
+}
 
-          <div class="btn-row">
-            <button type="button" class="btn btn-accent" id="btnExecuteSingle">Kirim Update & Notifikasi</button>
-            <button type="button" class="btn btn-secondary" id="btnValidateNik">Auto-Cek NIK</button>
-          </div>
+.toast-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
 
-          <div class="btn-row">
-            <button type="button" class="btn btn-secondary btn-sm" id="btnSimAccept" style="flex:1;">Uji Notif Diterima</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btnSimReject" style="flex:1;">Uji Notif Ditolak</button>
-          </div>
-        </form>
-      </section>
+.toast-accepted .toast-header {
+  color: var(--accent-emerald);
+}
 
-      <!-- Feed Notifikasi Email Diterima & Ditolak -->
-      <section class="card">
-        <div class="card-header">
-          <div>
-            <h2>Riwayat Notifikasi Email Terkirim</h2>
-            <p class="caption">Log pengiriman status Diterima & Ditolak</p>
-          </div>
-          <button type="button" class="btn-text" id="btnClearNotif">Bersihkan</button>
-        </div>
-        <div id="notifFeed" class="notif-feed">
-          <!-- Diisi otomatis saat notifikasi terkirim -->
-        </div>
-      </section>
+.toast-rejected .toast-header {
+  color: var(--text-light);
+}
 
-      <section class="card">
-        <div class="card-header">
-          <h2>UiPath Output Execution Log</h2>
-          <button type="button" class="btn-text" id="btnClearLog">Bersihkan</button>
-        </div>
-        <div id="executionLog" class="log-terminal"></div>
-      </section>
-    </aside>
+.toast-body {
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
 
-    <!-- Kolom Kanan: Google Sheets Simulator, Email Preview & VB.NET Code -->
-    <section class="right-column">
-      
-      <!-- Tabel Simulasi Google Sheets (15 Pendaftar) -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2>2. Live Google Sheets Simulator (15 Pendaftar Bansos)</h2>
-            <p class="caption">Klik baris mana saja untuk memuat data ke panel Arguments & melihat pratinjau email</p>
-          </div>
-          <div class="filter-group">
-            <button type="button" class="filter-btn active" data-filter="ALL">Semua</button>
-            <button type="button" class="filter-btn" data-filter="Valid">Diterima</button>
-            <button type="button" class="filter-btn" data-filter="Tidak Valid">Ditolak</button>
-            <button type="button" class="filter-btn" data-filter="Menunggu">Menunggu</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btnResetSheets">Reset</button>
-          </div>
-        </div>
+.toast-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
 
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Row</th>
-                <th>Kolom B: Nama Warga</th>
-                <th>Kolom C: Email Tujuan</th>
-                <th>Kolom D: NIK (AI OCR)</th>
-                <th>Kolom G: Status Verifikasi</th>
-                <th>Kolom H: Catatan AI</th>
-              </tr>
-            </thead>
-            <tbody id="sheetsTableBody">
-              <!-- Diisi otomatis oleh app.js -->
-            </tbody>
-          </table>
-        </div>
-      </div>
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 
-      <!-- Pratinjau Gmail & Generator VB.NET -->
-      <div class="split-panel">
-        <div class="card">
-          <div class="card-header">
-            <h2>3. Live Preview Gmail (Diterima / Ditolak)</h2>
-            <span id="emailModeTag" class="badge badge-valid">MODE: DITERIMA</span>
-          </div>
+/* Header & Statistik */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-slate);
+  padding: 16px 22px;
+  border-radius: 8px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
 
-          <div class="email-envelope">
-            <div class="envelope-row"><span>To:</span> <strong id="previewTo"></strong></div>
-            <div class="envelope-row"><span>Subject:</span> <strong id="previewSubject"></strong></div>
-          </div>
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 
-          <div id="emailRenderBox" class="email-canvas">
-            <!-- Dirender otomatis oleh app.js -->
-          </div>
-        </div>
+.brand-badge {
+  background-color: var(--accent-emerald-soft);
+  color: var(--accent-emerald);
+  border: 1px solid var(--accent-emerald);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 4px;
+}
 
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2>4. Generator Ekspresi VB.NET</h2>
-              <p class="caption">Salin ke variabel <code>str_BodyEmail</code> di Assign Activity</p>
-            </div>
-            <button type="button" class="btn btn-accent btn-sm" id="btnCopyVb">Copy VB.NET</button>
-          </div>
-          <pre id="vbExpressionBox" class="code-editor"></pre>
-        </div>
-      </div>
+.brand h1 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
 
-    </section>
-  </main>
+.brand p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
 
-  <script src="app.js"></script>
-</body>
-</html>
+.stats-bar {
+  display: flex;
+  gap: 10px;
+}
+
+.stat-box {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-slate);
+  padding: 6px 14px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-mono);
+}
+
+.stat-box.stat-accepted {
+  border-color: var(--accent-emerald);
+  background-color: var(--accent-emerald-soft);
+}
+
+.stat-box.stat-rejected {
+  border-style: dashed;
+}
+
+.stat-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.stat-box strong {
+  font-size: 0.95rem;
+  color: var(--text-light);
+}
+
+.stat-box.stat-accepted strong {
+  color: var(--accent-emerald);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-slate);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent-emerald);
+  box-shadow: 0 0 8px var(--accent-emerald);
+}
+
+/* Grid Utama */
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 390px 1fr;
+  gap: 22px;
+}
+
+@media (max-width: 1180px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.left-column,
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.split-panel {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 920px) {
+  .split-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Card */
+.card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-slate);
+  border-radius: 8px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-slate);
+  padding-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card-header h2 {
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.caption {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+}
+
+/* Form */
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 10px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.73rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.counter-tag {
+  color: var(--accent-emerald);
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-slate);
+  color: var(--text-light);
+  padding: 8px 11px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent-emerald);
+}
+
+/* Buttons & Filter */
+.btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  padding: 9px 13px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-accent {
+  background-color: var(--accent-emerald);
+  color: var(--bg-main);
+  flex: 1;
+}
+
+.btn-accent:hover {
+  background-color: var(--accent-emerald-hover);
+}
+
+.btn-secondary {
+  background-color: var(--bg-elevated);
+  color: var(--text-light);
+  border-color: var(--border-slate);
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent-emerald);
+  color: var(--accent-emerald);
+}
+
+.btn-sm {
+  padding: 6px 10px;
+  font-size: 0.7rem;
+  flex: 0 0 auto;
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.73rem;
+  cursor: pointer;
+}
+
+.btn-text:hover {
+  color: var(--accent-emerald);
+}
+
+.filter-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  background-color: var(--bg-elevated);
+  color: var(--text-muted);
+  border: 1px solid var(--border-slate);
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.filter-btn.active {
+  background-color: var(--accent-emerald-soft);
+  color: var(--accent-emerald);
+  border-color: var(--accent-emerald);
+  font-weight: 600;
+}
+
+/* Tabel Google Sheets */
+.table-container {
+  overflow-x: auto;
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid var(--border-slate);
+  border-radius: 6px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-elevated);
+  color: var(--text-muted);
+  z-index: 2;
+  border-bottom: 1px solid var(--border-slate);
+}
+
+th, td {
+  border: 1px solid var(--border-slate);
+  padding: 9px 11px;
+  text-align: left;
+}
+
+tbody tr {
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+tbody tr:hover {
+  background-color: rgba(248, 250, 252, 0.05);
+}
+
+tbody tr.selected-row {
+  background-color: var(--accent-emerald-soft);
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badge-valid {
+  background-color: var(--accent-emerald-soft);
+  color: var(--accent-emerald);
+  border: 1px solid var(--accent-emerald);
+}
+
+.badge-invalid {
+  background-color: var(--bg-elevated);
+  color: var(--text-light);
+  border: 1px dashed var(--text-light);
+}
+
+.badge-pending {
+  background-color: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-slate);
+}
+
+/* Riwayat Notifikasi Terkirim */
+.notif-feed {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-slate);
+  border-radius: 6px;
+  padding: 10px;
+  height: 170px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notif-card {
+  padding: 8px 10px;
+  border-radius: 5px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-slate);
+  font-size: 0.74rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.notif-card.accepted {
+  border-left: 3px solid var(--accent-emerald);
+}
+
+.notif-card.rejected {
+  border-left: 3px solid var(--text-light);
+}
+
+.notif-card-top {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+/* Email Preview & Code */
+.email-envelope {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-slate);
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+}
+
+.envelope-row {
+  margin-bottom: 3px;
+}
+
+.envelope-row span {
+  color: var(--text-muted);
+}
+
+.email-canvas {
+  background-color: var(--text-light);
+  color: var(--bg-main);
+  border-radius: 6px;
+  padding: 16px;
+  border: 1px solid var(--border-slate);
+}
+
+.code-editor {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-slate);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-light);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 290px;
+  overflow-y: auto;
+}
+
+.log-terminal {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-slate);
+  border-radius: 6px;
+  padding: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  height: 120px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.log-item {
+  color: var(--text-muted);
+}
+
+.log-item strong {
+  color: var(--accent-emerald);
+}
