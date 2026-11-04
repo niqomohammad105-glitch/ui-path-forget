@@ -1,51 +1,27 @@
-// Data awal simulasi Google Sheets
+// 15 Data Pendaftar Bansos dengan Berbagai Kasus Valid & Tidak Valid
 const initialSheetData = [
-  {
-    row: 2,
-    nama: "Budi Santoso",
-    email: "budi.santoso@warga.id",
-    nik: "6306051204980001",
-    status: "Valid",
-    catatan: "16 digit NIK terverifikasi jelas & sesuai database dukcapil."
-  },
-  {
-    row: 3,
-    nama: "Siti Aminah",
-    email: "siti.aminah@warga.id",
-    nik: "6306055408990002",
-    status: "Menunggu",
-    catatan: "Menunggu eksekusi workflow output..."
-  },
-  {
-    row: 4,
-    nama: "Ahmad Fauzi",
-    email: "ahmad.fauzi@warga.id",
-    nik: "63060519001",
-    status: "Tidak Valid",
-    catatan: "Ekstraksi OCR hanya membaca 11 digit (Foto KTP buram)."
-  },
-  {
-    row: 5,
-    nama: "Rina Kartika",
-    email: "rina.kartika@warga.id",
-    nik: "6306054509010004",
-    status: "Menunggu",
-    catatan: "Menunggu eksekusi workflow output..."
-  },
-  {
-    row: 6,
-    nama: "Hendra Wijaya",
-    email: "hendra.w@warga.id",
-    nik: "630605010188000X",
-    status: "Menunggu",
-    catatan: "Menunggu eksekusi workflow output..."
-  }
+  { row: 2, nama: "Budi Santoso", email: "budi.santoso@warga.id", nik: "6306051204980001", status: "Valid", catatan: "16 digit NIK terverifikasi jelas & sesuai database dukcapil." },
+  { row: 3, nama: "Siti Aminah", email: "siti.aminah@warga.id", nik: "6306055408990002", status: "Valid", catatan: "16 digit NIK terverifikasi jelas & sesuai database dukcapil." },
+  { row: 4, nama: "Ahmad Fauzi", email: "ahmad.fauzi@warga.id", nik: "63060519001", status: "Tidak Valid", catatan: "DITOLAK: Ekstraksi OCR hanya membaca 11 digit (Foto KTP buram)." },
+  { row: 5, nama: "Rina Kartika", email: "rina.kartika@warga.id", nik: "6306054509010004", status: "Menunggu", catatan: "Menunggu eksekusi workflow output..." },
+  { row: 6, nama: "Hendra Wijaya", email: "hendra.wijaya@warga.id", nik: "630605010188000X", status: "Tidak Valid", catatan: "DITOLAK: Terdeteksi karakter huruf 'X' pada NIK akibat pantulan cahaya." },
+  { row: 7, nama: "Dewi Lestari", email: "dewi.lestari@warga.id", nik: "6306056211950003", status: "Menunggu", catatan: "Menunggu eksekusi workflow output..." },
+  { row: 8, nama: "Muhammad Rizky", email: "m.rizky@warga.id", nik: "6306051807020005", status: "Valid", catatan: "16 digit NIK terverifikasi jelas & sesuai database dukcapil." },
+  { row: 9, nama: "Nurul Hidayah", email: "nurul.hidayah@warga.id", nik: "6306054903", status: "Menunggu", catatan: "Menunggu eksekusi workflow output..." },
+  { row: 10, nama: "Eko Prasetyo", email: "eko.prasetyo@warga.id", nik: "6306052910870007", status: "Menunggu", catatan: "Menunggu eksekusi workflow output..." },
+  { row: 11, nama: "Fitriani Rahma", email: "fitri.rahma@warga.id", nik: "", status: "Tidak Valid", catatan: "DITOLAK: Dokumen bukan KTP / NIK kosong tidak terbaca oleh AI." },
+  { row: 12, nama: "Agus Setiawan", email: "agus.setiawan@warga.id", nik: "6306050412910009", status: "Menunggu", catatan: "Menunggu eksekusi workflow output..." },
+  { row: 13, nama: "Ratna Sari", email: "ratna.sari@warga.id", nik: "6306056705960010", status: "Menunggu", catatan: "Menunggu eksekusi workflow output..." },
+  { row: 14, nama: "Dimas Anggara", email: "dimas.anggara@warga.id", nik: "63060511029400B2", status: "Menunggu", catatan: "Menunggu eksekusi workflow output..." },
+  { row: 15, nama: "Lina Marlina", email: "lina.marlina@warga.id", nik: "6306055908900012", status: "Menunggu", catatan: "Menunggu eksekusi workflow output..." },
+  { row: 16, nama: "Wahyu Saputra", email: "wahyu.saputra@warga.id", nik: "6306052106", status: "Menunggu", catatan: "Menunggu eksekusi workflow output..." }
 ];
 
 let sheetData = JSON.parse(JSON.stringify(initialSheetData));
+let currentFilter = "ALL";
+let activeRowNumber = 2;
 let isAutoRunning = false;
 
-// Referensi DOM
 const dom = {
   rowIndex: document.getElementById("in_RowIndex"),
   status: document.getElementById("in_StatusVerifikasi"),
@@ -57,19 +33,88 @@ const dom = {
   sheetsBody: document.getElementById("sheetsTableBody"),
   previewTo: document.getElementById("previewTo"),
   previewSubject: document.getElementById("previewSubject"),
+  emailModeTag: document.getElementById("emailModeTag"),
   emailRenderBox: document.getElementById("emailRenderBox"),
   vbExpressionBox: document.getElementById("vbExpressionBox"),
   executionLog: document.getElementById("executionLog"),
+  notifFeed: document.getElementById("notifFeed"),
+  toastContainer: document.getElementById("toastContainer"),
   robotStatusText: document.getElementById("robotStatusText"),
+  statTotal: document.getElementById("statTotal"),
+  statValid: document.getElementById("statValid"),
+  statInvalid: document.getElementById("statInvalid"),
   btnExecuteSingle: document.getElementById("btnExecuteSingle"),
   btnValidateNik: document.getElementById("btnValidateNik"),
+  btnSimAccept: document.getElementById("btnSimAccept"),
+  btnSimReject: document.getElementById("btnSimReject"),
   btnAutoRun: document.getElementById("btnAutoRun"),
   btnResetSheets: document.getElementById("btnResetSheets"),
   btnCopyVb: document.getElementById("btnCopyVb"),
-  btnClearLog: document.getElementById("btnClearLog")
+  btnClearLog: document.getElementById("btnClearLog"),
+  btnClearNotif: document.getElementById("btnClearNotif")
 };
 
-// Catat Log seperti panel Output UiPath Studio
+// Update Counter Statistik di Header
+function updateStats() {
+  const total = sheetData.length;
+  const validCount = sheetData.filter((r) => r.status === "Valid").length;
+  const invalidCount = sheetData.filter((r) => r.status === "Tidak Valid").length;
+
+  dom.statTotal.textContent = total;
+  dom.statValid.textContent = validCount;
+  dom.statInvalid.textContent = invalidCount;
+}
+
+// Tampilkan Popup Toast Notification (Diterima & Ditolak)
+function showNotificationToast(nama, email, status, catatan) {
+  const isAccepted = status === "Valid";
+  const toast = document.createElement("div");
+  toast.className = `toast ${isAccepted ? "toast-accepted" : "toast-rejected"}`;
+
+  const statusTitle = isAccepted
+    ? "NOTIFIKASI DITERIMA TERKIRIM"
+    : "NOTIFIKASI PENOLAKAN TERKIRIM";
+
+  toast.innerHTML = `
+    <div class="toast-header">
+      <span>${statusTitle}</span>
+      <span>GMAIL API</span>
+    </div>
+    <div class="toast-body">
+      <strong>${nama}</strong> (${email})
+    </div>
+    <div class="toast-sub">${catatan}</div>
+  `;
+
+  dom.toastContainer.prepend(toast);
+
+  setTimeout(() => {
+    toast.remove();
+  }, 3800);
+}
+
+// Tambahkan ke Riwayat Notifikasi Terkirim di Panel Kiri
+function addNotificationHistory(rowNum, nama, email, status, catatan) {
+  const isAccepted = status === "Valid";
+  const time = new Date().toLocaleTimeString("id-ID", { hour12: false });
+  const card = document.createElement("div");
+  card.className = `notif-card ${isAccepted ? "accepted" : "rejected"}`;
+
+  const tagLabel = isAccepted ? "[DISETUJUI / DITERIMA]" : "[DITOLAK / TIDAK VALID]";
+
+  card.innerHTML = `
+    <div class="notif-card-top">
+      <strong>${tagLabel} Baris #${rowNum}</strong>
+      <span>${time}</span>
+    </div>
+    <div>Kepada: <strong>${nama}</strong> &lt;${email}&gt;</div>
+    <div style="color: var(--text-muted); font-size: 0.7rem;">${catatan}</div>
+  `;
+
+  dom.notifFeed.prepend(card);
+}
+
+// Log Aktivitas Robot
 function writeLog(level, message) {
   const now = new Date().toLocaleTimeString("id-ID", { hour12: false });
   const div = document.createElement("div");
@@ -78,65 +123,89 @@ function writeLog(level, message) {
   dom.executionLog.prepend(div);
 }
 
-// Validasi 16 digit angka NIK otomatis (Simulasi logika bisnis Document Understanding)
+// Validasi 16 digit NIK otomatis
 function autoValidateNikLogic(nikString) {
   const cleanNik = nikString.trim();
-  const is16Digits = /^\d{16}$/.test(cleanNik);
-
-  if (is16Digits) {
-    return {
-      status: "Valid",
-      catatan: "16 digit NIK terverifikasi jelas & sesuai format standar KTP."
-    };
-  } else {
+  if (!cleanNik) {
     return {
       status: "Tidak Valid",
-      catatan: `Format NIK gagal validasi AI (Terbaca ${cleanNik.length} karakter, wajib 16 digit angka).`
+      catatan: "DITOLAK: Foto KTP kosong atau NIK gagal diekstrak oleh AI Document Understanding."
     };
   }
+  if (!/^\d+$/.test(cleanNik)) {
+    return {
+      status: "Tidak Valid",
+      catatan: `DITOLAK: NIK mengandung karakter non-angka (${cleanNik}) akibat foto KTP silau/buram.`
+    };
+  }
+  if (cleanNik.length !== 16) {
+    return {
+      status: "Tidak Valid",
+      catatan: `DITOLAK: Jumlah digit NIK tidak lengkap (Terbaca ${cleanNik.length} dari 16 digit wajib).`
+    };
+  }
+  return {
+    status: "Valid",
+    catatan: "DITERIMA: 16 digit NIK terverifikasi jelas & sesuai format standar KTP."
+  };
 }
 
 // Render Tabel Google Sheets
-function renderSheetsTable(selectedRowNum) {
+function renderSheetsTable() {
   dom.sheetsBody.innerHTML = "";
 
-  sheetData.forEach((item) => {
+  const filteredData = sheetData.filter((item) => {
+    if (currentFilter === "ALL") return true;
+    return item.status === currentFilter;
+  });
+
+  filteredData.forEach((item) => {
     const tr = document.createElement("tr");
-    if (item.row === selectedRowNum) {
+    if (item.row === activeRowNumber) {
       tr.classList.add("selected-row");
     }
 
-    const badgeClass = item.status === "Valid" ? "badge badge-valid" : "badge badge-invalid";
+    let badgeClass = "badge badge-pending";
+    let statusText = item.status;
+
+    if (item.status === "Valid") {
+      badgeClass = "badge badge-valid";
+      statusText = "VALID (DITERIMA)";
+    } else if (item.status === "Tidak Valid") {
+      badgeClass = "badge badge-invalid";
+      statusText = "TIDAK VALID (DITOLAK)";
+    }
 
     tr.innerHTML = `
       <td>#${item.row}</td>
       <td><strong>${item.nama}</strong></td>
       <td>${item.email}</td>
-      <td>${item.nik || "Tidak Terbaca"}</td>
-      <td><span class="${badgeClass}">${item.status}</span></td>
+      <td>${item.nik || "<em>Tidak Terbaca</em>"}</td>
+      <td><span class="${badgeClass}">${statusText}</span></td>
       <td>${item.catatan}</td>
     `;
 
-    // Klik baris tabel untuk mengoper data ke Form Arguments
     tr.addEventListener("click", () => {
       loadRowIntoForm(item.row);
     });
 
     dom.sheetsBody.appendChild(tr);
   });
+
+  updateStats();
 }
 
-// Muat baris tertentu ke panel Arguments di sebelah kiri
+// Muat baris ke Form Arguments
 function loadRowIntoForm(rowNumber) {
   const item = sheetData.find((r) => r.row === rowNumber);
   if (!item) return;
 
+  activeRowNumber = rowNumber;
   dom.rowIndex.value = item.row;
   dom.nama.value = item.nama;
   dom.email.value = item.email;
   dom.nik.value = item.nik;
 
-  // Jika masih "Menunggu", evaluasi otomatis dengan pengecek NIK
   if (item.status === "Menunggu") {
     const check = autoValidateNikLogic(item.nik);
     dom.status.value = check.status;
@@ -148,156 +217,159 @@ function loadRowIntoForm(rowNumber) {
 
   updateNikCounter();
   updateEmailAndVbPreview();
-  renderSheetsTable(rowNumber);
-  writeLog("INFO", `Memuat data baris #${rowNumber} (${item.nama}) ke Arguments.`);
+  renderSheetsTable();
 }
 
-// Update indikator jumlah digit NIK
 function updateNikCounter() {
   const len = dom.nik.value.trim().length;
   dom.nikCounter.textContent = `${len}/16 Digit`;
 }
 
-// Bangun HTML Email (Menggunakan 3 palet warna yang konsisten)
+// Generate HTML Email (Membedakan Tampilan Diterima vs Ditolak dengan Jelas)
 function generateEmailHtml(nama, nik, status, catatan) {
-  const isValid = status.trim().toUpperCase() === "VALID";
-  const badgeBg = isValid ? "#10b981" : "#0f172a";
-  const statusHeading = isValid ? "DISETUJUI // VALID" : "DITOLAK // TIDAK VALID";
+  const isAccepted = status === "Valid";
+  const badgeBg = isAccepted ? "#10b981" : "#0f172a";
+  const statusBanner = isAccepted
+    ? "PENGAJUAN BANSOS DITERIMA (VALID)"
+    : "PENGAJUAN BANSOS DITOLAK (TIDAK VALID)";
 
-  const introMsg = isValid
-    ? "Selamat! Dokumen KTP dan data pendaftaran Bantuan Sosial (Bansos) Anda telah berhasil diverifikasi oleh sistem AI Document Understanding kami."
-    : "Mohon maaf, pendaftaran Bantuan Sosial (Bansos) Anda belum dapat kami proses lebih lanjut karena dokumen KTP tidak lolos verifikasi AI.";
+  const introMsg = isAccepted
+    ? "Selamat! Berdasarkan pemeriksaan otomatis Robot RPA & AI Document Understanding, dokumen KTP Anda dinyatakan <strong>VALID</strong> dan pendaftaran Bantuan Sosial Anda telah <strong>DISETUJUI</strong>."
+    : "Mohon maaf, berdasarkan hasil pemeriksaan otomatis Robot RPA & AI Document Understanding, dokumen KTP Anda dinyatakan <strong>TIDAK VALID</strong> sehingga pengajuan Bantuan Sosial Anda <strong>DITOLAK</strong>.";
 
-  const nextStepMsg = isValid
-    ? "Silakan simpan email ini sebagai bukti verifikasi resmi. Jadwal penyaluran bantuan akan diinformasikan pada tahap berikutnya."
-    : "Silakan ajukan ulang pendaftaran dengan memastikan foto KTP terlihat terang, tidak buram, dan 16 digit NIK terbaca jelas.";
+  const actionBox = isAccepted
+    ? `<div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 10px 12px; font-size: 12px; margin-bottom: 12px; color: #0f172a;">
+         <strong>Tahap Selanjutnya:</strong> Dana bantuan akan disalurkan sesuai jadwal kelurahan. Simpan email ini sebagai bukti persetujuan resmi.
+       </div>`
+    : `<div style="background-color: #f1f5f9; border-left: 4px solid #0f172a; padding: 10px 12px; font-size: 12px; margin-bottom: 12px; color: #0f172a;">
+         <strong>Instruksi Perbaikan:</strong> Silakan unggah ulang foto KTP asli yang terang, fokus, dan pastikan seluruh 16 digit angka NIK terlihat jelas.
+       </div>`;
 
   return `
-    <div style="font-family: Arial, sans-serif; color: #0f172a; background-color: #f8fafc; padding: 18px; border: 1px solid #cbd5e1; border-radius: 6px;">
-      <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
-        <strong style="font-size: 14px; letter-spacing: 0.4px;">VERIFIKASI BANSOS TERPADU</strong>
+    <div style="font-family: Arial, sans-serif; color: #0f172a; background-color: #f8fafc; padding: 16px; border: 1px solid #cbd5e1; border-radius: 6px;">
+      <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+        <strong style="font-size: 13px;">SISTEM VERIFIKASI BANSOS TERPADU</strong>
         <span style="background-color: ${badgeBg}; color: #f8fafc; font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 4px;">
-          ${statusHeading}
+          ${statusBanner}
         </span>
       </div>
-      <p style="font-size: 13px; margin-bottom: 10px;">Halo <strong>${nama}</strong>,</p>
-      <p style="font-size: 13px; line-height: 1.5; margin-bottom: 14px;">${introMsg}</p>
-      <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; background-color: #ffffff;">
+      <p style="font-size: 13px; margin-bottom: 8px;">Yth. Bapak/Ibu <strong>${nama}</strong>,</p>
+      <p style="font-size: 12.5px; line-height: 1.5; margin-bottom: 12px;">${introMsg}</p>
+      <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; background-color: #ffffff;">
         <tr>
-          <td style="border: 1px solid #cbd5e1; padding: 7px 10px; width: 38%; background-color: #f1f5f9;"><strong>NIK Terbaca (AI)</strong></td>
-          <td style="border: 1px solid #cbd5e1; padding: 7px 10px; font-family: monospace;">${nik || "Tidak Terbaca"}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 6px 10px; width: 36%; background-color: #f1f5f9;"><strong>NIK Terbaca (AI)</strong></td>
+          <td style="border: 1px solid #cbd5e1; padding: 6px 10px; font-family: monospace;">${nik || "Tidak Terbaca"}</td>
         </tr>
         <tr>
-          <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f1f5f9;"><strong>Status Akhir</strong></td>
-          <td style="border: 1px solid #cbd5e1; padding: 7px 10px; font-weight: bold;">${status}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 6px 10px; background-color: #f1f5f9;"><strong>Keputusan Akhir</strong></td>
+          <td style="border: 1px solid #cbd5e1; padding: 6px 10px; font-weight: bold;">${isAccepted ? "DITERIMA (Valid)" : "DITOLAK (Tidak Valid)"}</td>
         </tr>
         <tr>
-          <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f1f5f9;"><strong>Catatan AI</strong></td>
-          <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">${catatan}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 6px 10px; background-color: #f1f5f9;"><strong>Catatan Evaluasi AI</strong></td>
+          <td style="border: 1px solid #cbd5e1; padding: 6px 10px;">${catatan}</td>
         </tr>
       </table>
-      <p style="font-size: 12px; line-height: 1.5; margin-bottom: 12px;">${nextStepMsg}</p>
-      <div style="border-top: 1px solid #cbd5e1; padding-top: 8px; font-size: 11px; color: #475569;">
-        Notifikasi Otomatis Robot RPA UiPath — Mohon tidak membalas pesan ini.
+      ${actionBox}
+      <div style="border-top: 1px solid #cbd5e1; padding-top: 8px; font-size: 10.5px; color: #475569;">
+        Dikirim otomatis oleh Robot RPA UiPath — Mohon tidak membalas email ini.
       </div>
     </div>
   `;
 }
 
-// Bangun kode ekspresi String VB.NET untuk UiPath Assign Activity
+// Generate VB.NET String untuk UiPath Studio
 function generateVbNetString(status) {
-  const isValid = status.trim().toUpperCase() === "VALID";
-  const badgeBg = isValid ? "#10b981" : "#0f172a";
-  const statusHeading = isValid ? "DISETUJUI // VALID" : "DITOLAK // TIDAK VALID";
-  const introMsg = isValid
-    ? "Selamat! Dokumen KTP dan pendaftaran Bansos Anda telah berhasil diverifikasi oleh AI Document Understanding."
-    : "Mohon maaf, pendaftaran Bansos Anda belum dapat disetujui karena dokumen KTP tidak lolos verifikasi AI.";
+  const isAccepted = status === "Valid";
+  const statusBanner = isAccepted ? "DISETUJUI // DITERIMA" : "DITOLAK // TIDAK VALID";
+  const introMsg = isAccepted
+    ? "Selamat! Pendaftaran Bantuan Sosial Anda telah DISETUJUI berdasarkan verifikasi AI Document Understanding."
+    : "Mohon maaf, pendaftaran Bantuan Sosial Anda DITOLAK karena dokumen KTP tidak lolos verifikasi AI.";
 
-  return `"<div style='font-family:Arial,sans-serif;max-width:560px;padding:20px;border:1px solid #0f172a;background:#f8fafc;color:#0f172a;'>" +
-"<div style='border-bottom:2px solid #0f172a;padding-bottom:10px;margin-bottom:14px;'>" +
-"<strong>PORTAL VERIFIKASI BANSOS — ${statusHeading}</strong></div>" +
-"<p>Halo <b>" + in_NamaPendaftar + "</b>,</p>" +
+  return `"<div style='font-family:Arial,sans-serif;max-width:560px;padding:18px;border:1px solid #0f172a;background:#f8fafc;color:#0f172a;'>" +
+"<div style='border-bottom:2px solid #0f172a;padding-bottom:8px;margin-bottom:12px;'>" +
+"<strong>VERIFIKASI BANSOS — ${statusBanner}</strong></div>" +
+"<p>Yth. <b>" + in_NamaPendaftar + "</b>,</p>" +
 "<p>${introMsg}</p>" +
-"<table style='width:100%;border-collapse:collapse;margin:14px 0;font-size:13px;background:#ffffff;'>" +
-"<tr><td style='border:1px solid #cbd5e1;padding:8px;'><b>NIK KTP (AI)</b></td>" +
+"<table style='width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;background:#ffffff;'>" +
+"<tr><td style='border:1px solid #cbd5e1;padding:8px;'><b>NIK Terbaca</b></td>" +
 "<td style='border:1px solid #cbd5e1;padding:8px;'>" + If(String.IsNullOrEmpty(in_NIK_KTP), "Tidak Terbaca", in_NIK_KTP) + "</td></tr>" +
 "<tr><td style='border:1px solid #cbd5e1;padding:8px;'><b>Status Akhir</b></td>" +
-"<td style='border:1px solid #cbd5e1;padding:8px;color:${badgeBg};'><b>" + in_StatusVerifikasi + "</b></td></tr>" +
+"<td style='border:1px solid #cbd5e1;padding:8px;'><b>" + in_StatusVerifikasi + "</b></td></tr>" +
 "<tr><td style='border:1px solid #cbd5e1;padding:8px;'><b>Catatan AI</b></td>" +
 "<td style='border:1px solid #cbd5e1;padding:8px;'>" + in_CatatanAI + "</td></tr></table>" +
-"<p style='font-size:11px;color:#475569;'>Dikirim otomatis oleh Robot RPA UiPath.</p></div>"`;
+"<p style='font-size:11px;color:#475569;'>Notifikasi Otomatis Robot RPA UiPath.</p></div>"`;
 }
 
-// Perbarui pratinjau Email dan kode VB.NET
+// Update Pratinjau Email & Kode VB.NET
 function updateEmailAndVbPreview() {
-  const nama = dom.nama.value.trim() || "Pendaftar";
-  const email = dom.email.value.trim() || "pendaftar@warga.id";
+  const nama = dom.nama.value.trim() || "Warga Pendaftar";
+  const email = dom.email.value.trim() || "warga@email.id";
   const nik = dom.nik.value.trim();
   const status = dom.status.value;
   const catatan = dom.catatan.value.trim();
 
-  const isValid = status.toUpperCase() === "VALID";
-  const prefix = isValid ? "[DISETUJUI]" : "[DITOLAK]";
+  const isAccepted = status === "Valid";
+  const subjectPrefix = isAccepted ? "[DISETUJUI]" : "[DITOLAK]";
+
+  dom.emailModeTag.textContent = isAccepted ? "MODE: DITERIMA" : "MODE: DITOLAK";
+  dom.emailModeTag.className = isAccepted ? "badge badge-valid" : "badge badge-invalid";
 
   dom.previewTo.textContent = email;
-  dom.previewSubject.textContent = `${prefix} Hasil Verifikasi Pendaftaran Bansos - ${nama}`;
+  dom.previewSubject.textContent = `${subjectPrefix} Pengumuman Verifikasi Bansos - ${nama}`;
   dom.emailRenderBox.innerHTML = generateEmailHtml(nama, nik, status, catatan);
   dom.vbExpressionBox.textContent = generateVbNetString(status);
 }
 
-// Eksekusi pembaruan satu baris (Simulasi Write Cell + Send Email)
+// Eksekusi Update Baris & Kirim Notifikasi (Diterima / Ditolak)
 function executeSingleRow() {
   const rowNum = parseInt(dom.rowIndex.value, 10);
   const target = sheetData.find((r) => r.row === rowNum);
 
   if (!target) {
-    writeLog("ERROR", `Baris #${rowNum} tidak ditemukan di Google Sheets.`);
+    writeLog("ERROR", `Baris #${rowNum} tidak ditemukan di tabel Google Sheets.`);
     return;
   }
 
-  dom.robotStatusText.textContent = `RUNNING // ROW #${rowNum} (WRITE CELL & GMAIL)`;
-
+  activeRowNumber = rowNum;
   target.nama = dom.nama.value.trim();
   target.email = dom.email.value.trim();
   target.nik = dom.nik.value.trim();
   target.status = dom.status.value;
   target.catatan = dom.catatan.value.trim();
 
-  renderSheetsTable(rowNum);
+  const decisionText = target.status === "Valid" ? "DITERIMA" : "DITOLAK";
+  dom.robotStatusText.textContent = `SENDING // ROW #${rowNum} (${decisionText})`;
+
+  renderSheetsTable();
   updateEmailAndVbPreview();
 
-  writeLog("INFO", `Write Cell G${rowNum} = "${target.status}" & H${rowNum} = "${target.catatan}" berhasil.`);
-  writeLog("INFO", `Send Email Gmail terkirim ke ${target.email} (${target.status}).`);
+  // Munculkan Toast & Masukkan ke Riwayat Notifikasi
+  showNotificationToast(target.nama, target.email, target.status, target.catatan);
+  addNotificationHistory(rowNum, target.nama, target.email, target.status, target.catatan);
 
-  setTimeout(() => {
-    if (!isAutoRunning) {
-      dom.robotStatusText.textContent = `SUCCESS // ROW #${rowNum} COMPLETED`;
-    }
-  }, 400);
+  writeLog("INFO", `Row #${rowNum} (${target.nama}) -> Status: ${target.status} | Notifikasi ${decisionText} terkirim ke ${target.email}.`);
 }
 
-// Simulasi Auto-Loop seluruh baris seperti For Each Row di UiPath
+// Jalankan Auto-Loop untuk Seluruh 15 Pendaftar
 async function runFullQueueAutomation() {
   if (isAutoRunning) return;
   isAutoRunning = true;
-  dom.btnAutoRun.textContent = "Memproses Antrean...";
-  writeLog("INFO", "Memulai eksekusi For Each Row in Google Sheets...");
+  dom.btnAutoRun.textContent = "Memproses 15 Antrean...";
+  writeLog("INFO", "Memulai Auto-Loop (For Each Row) untuk 15 pendaftar Bansos...");
 
   for (const item of sheetData) {
-    dom.robotStatusText.textContent = `AUTO-LOOP // PROCESSING ROW #${item.row}`;
     loadRowIntoForm(item.row);
-
-    const validation = autoValidateNikLogic(item.nik);
-    dom.status.value = validation.status;
-    dom.catatan.value = validation.catatan;
+    const check = autoValidateNikLogic(item.nik);
+    dom.status.value = check.status;
+    dom.catatan.value = check.catatan;
 
     executeSingleRow();
-    await new Promise((resolve) => setTimeout(resolve, 750));
+    await new Promise((r) => setTimeout(r, 550));
   }
 
-  dom.robotStatusText.textContent = "QUEUE FINISHED // ALL ROWS UPDATED";
-  dom.btnAutoRun.textContent = "Jalankan Antrean Robot (Auto-Loop)";
-  writeLog("INFO", "Seluruh antrean pendaftar Bansos selesai diverifikasi & dikirimi email.");
+  dom.robotStatusText.textContent = "COMPLETED // 15 NOTIFICATIONS SENT";
+  dom.btnAutoRun.textContent = "Jalankan Antrean Robot (15 Data)";
+  writeLog("INFO", "Seluruh 15 data selesai diverifikasi dan dikirimi email Diterima/Ditolak.");
   isAutoRunning = false;
 }
 
@@ -316,31 +388,60 @@ dom.btnValidateNik.addEventListener("click", () => {
   dom.status.value = result.status;
   dom.catatan.value = result.catatan;
   updateEmailAndVbPreview();
-  writeLog("INFO", `Validasi RegEx 16 digit NIK menghasilkan status: ${result.status}`);
+});
+
+// Tombol Uji Cepat Notifikasi Diterima
+dom.btnSimAccept.addEventListener("click", () => {
+  dom.status.value = "Valid";
+  dom.catatan.value = "DITERIMA: 16 digit NIK terverifikasi jelas & sesuai database dukcapil.";
+  executeSingleRow();
+});
+
+// Tombol Uji Cepat Notifikasi Ditolak
+dom.btnSimReject.addEventListener("click", () => {
+  dom.status.value = "Tidak Valid";
+  dom.catatan.value = "DITOLAK: Foto KTP buram / digit NIK tidak lengkap hasil pemeriksaan AI.";
+  executeSingleRow();
 });
 
 dom.btnExecuteSingle.addEventListener("click", executeSingleRow);
 dom.btnAutoRun.addEventListener("click", runFullQueueAutomation);
 
+// Filter Tabel Status
+document.querySelectorAll(".filter-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentFilter = btn.getAttribute("data-filter");
+    renderSheetsTable();
+  });
+});
+
 dom.btnResetSheets.addEventListener("click", () => {
   sheetData = JSON.parse(JSON.stringify(initialSheetData));
+  dom.notifFeed.innerHTML = "";
   loadRowIntoForm(2);
-  writeLog("INFO", "Data simulasi Google Sheets di-reset ke kondisi awal.");
+  writeLog("INFO", "15 data pendaftar di-reset ke status awal.");
 });
 
 dom.btnClearLog.addEventListener("click", () => {
   dom.executionLog.innerHTML = "";
 });
 
-dom.btnCopyVb.addEventListener("click", () => {
-  navigator.clipboard.writeText(dom.vbExpressionBox.textContent);
-  const original = dom.btnCopyVb.textContent;
-  dom.btnCopyVb.textContent = "Copied!";
-  writeLog("INFO", "String ekspresi VB.NET berhasil disalin ke Clipboard.");
-  setTimeout(() => {
-    dom.btnCopyVb.textContent = original;
-  }, 1500);
+dom.btnClearNotif.addEventListener("click", () => {
+  dom.notifFeed.innerHTML = "";
 });
 
-// Inisialisasi awal saat halaman dibuka
+dom.btnCopyVb.addEventListener("click", () => {
+  navigator.clipboard.writeText(dom.vbExpressionBox.textContent);
+  const oldText = dom.btnCopyVb.textContent;
+  dom.btnCopyVb.textContent = "Copied!";
+  setTimeout(() => {
+    dom.btnCopyVb.textContent = oldText;
+  }, 1400);
+});
+
+// Inisialisasi awal beserta contoh riwayat notifikasi Diterima & Ditolak
 loadRowIntoForm(2);
+addNotificationHistory(2, "Budi Santoso", "budi.santoso@warga.id", "Valid", "DITERIMA: 16 digit NIK terverifikasi jelas & sesuai database dukcapil.");
+addNotificationHistory(4, "Ahmad Fauzi", "ahmad.fauzi@warga.id", "Tidak Valid", "DITOLAK: Ekstraksi OCR hanya membaca 11 digit (Foto KTP buram).");
