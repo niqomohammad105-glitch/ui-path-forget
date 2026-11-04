@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bansos RPA Output & Email Console — UiPath Hackathon</title>
+  <style>
+    :root {
+      --bg-primary: #000000;
+      --bg-secondary: #0a0a0a;
+      --bg-tertiary: #121212;
+      --border-color: #262626;
+      --border-focus: #ffffff;
+      --text-primary: #ffffff;
+      --text-muted: #888888;
+      --accent-valid: #22c55e;
+      --accent-invalid: #ef4444;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    /* Header Layout */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .header-title h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+    }
+
+    .header-title p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--text-primary);
+    }
+
+    /* Main Grid */
+    .grid-container {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .grid-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Card Containers */
+    .panel {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+
+    .panel-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-family: var(--font-mono);
+    }
+
+    /* Form Controls */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .form-control {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 10px 12px;
+      font-size: 0.875rem;
+      font-family: var(--font-mono);
+      outline: none;
+      transition: border-color 0.15s ease, transform 0.1s ease;
+    }
+
+    .form-control:focus {
+      border-color: var(--border-focus);
+    }
+
+    /* Buttons */
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      flex: 1;
+      background-color: var(--text-primary);
+      color: var(--bg-primary);
+      border: 1px solid var(--text-primary);
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-outline {
+      background-color: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--text-primary);
+    }
+
+    /* Right Column Stack */
+    .right-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Simulated Google Sheets Table */
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--bg-tertiary);
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    tr.active-row {
+      background-color: #161616;
+    }
+
+    .tag {
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      border: 1px solid currentColor;
+    }
+
+    .tag-valid {
+      color: var(--accent-valid);
+    }
+
+    .tag-invalid {
+      color: var(--accent-invalid);
+    }
+
+    /* Email Preview Box */
+    .email-preview-container {
+      background-color: #ffffff;
+      color: #000000;
+      border: 1px solid var(--border-color);
+      padding: 24px;
+      font-family: var(--font-sans);
+    }
+
+    .email-meta {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      margin-bottom: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+    }
+
+    .email-meta div {
+      margin-bottom: 4px;
+    }
+
+    .email-meta span {
+      color: var(--text-muted);
+    }
+
+    /* Code Generator Box */
+    .code-box {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: #d4d4d4;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-title">
+      <h1>UiPath Bansos Output & Notification Console</h1>
+      <p>Workflow Module: UpdateAndNotify_Bansos.xaml (Sheets + Gmail Automation)</p>
+    </div>
+    <div class="status-badge">
+      <span class="dot"></span>
+      <span id="robotStatusText">ROBOT READY // IDLE</span>
+    </div>
+  </header>
+
+  <main class="grid-container">
+    <!-- Panel Kiri: Simulator Arguments UiPath -->
+    <section class="panel">
+      <div class="panel-header">
+        <span class="panel-title">1. Input Arguments (.xaml)</span>
+      </div>
+
+      <div class="form-group">
+        <label>in_RowIndex (Int32)</label>
+        <input type="number" id="in_RowIndex" class="form-control" value="2" min="2" max="5">
+      </div>
+
+      <div class="form-group">
+        <label>in_NamaPendaftar (String)</label>
+        <input type="text" id="in_NamaPendaftar" class="form-control" value="Budi Santoso">
+      </div>
+
+      <div class="form-group">
+        <label>in_EmailPendaftar (String)</label>
+        <input type="email" id="in_EmailPendaftar" class="form-control" value="budi.santoso@email.id">
+      </div>
+
+      <div class="form-group">
+        <label>in_NIK_KTP (String - 16 Digit DU Result)</label>
+        <input type="text" id="in_NIK_KTP" class="form-control" value="6306051204980001" maxlength="16">
+      </div>
+
+      <div class="form-group">
+        <label>in_StatusVerifikasi (String)</label>
+        <select id="in_StatusVerifikasi" class="form-control">
+          <option value="Valid">Valid</option>
+          <option value="Tidak Valid">Tidak Valid</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>in_CatatanAI (String)</label>
+        <input type="text" id="in_CatatanAI" class="form-control" value="16 digit NIK terverifikasi jelas & sesuai KK.">
+      </div>
+
+      <div class="btn-group">
+        <button class="btn" id="btnSimulate">Jalankan Simulasi Robot</button>
+        <button class="btn btn-outline" id="btnPresetInvalid">Test Ditolak</button>
+      </div>
+    </section>
+
+    <!-- Panel Kanan: Output Sheets, Email Preview & VB.NET Generator -->
+    <div class="right-stack">
+      
+      <!-- Simulasi Google Sheets -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="panel-title">2. Simulasi Update Google Sheets (Write Cell G & H)</span>
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">Sheet: Data_Pendaftar</span>
+        </div>
+        <div class="table-wrapper">
+          <table id="sheetsTable">
+            <thead>
+              <tr>
+                <th>Row</th>
+                <th>Kolom B (Nama)</th>
+                <th>Kolom C (Email)</th>
+                <th>Kolom D (NIK KTP - AI)</th>
+                <th>Kolom G (Status)</th>
+                <th>Kolom H (Catatan AI)</th>
+              </tr>
+            </thead>
+            <tbody id="sheetsBody">
+              <!-- Diisi via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Live Preview HTML Email -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="panel-title">3. Live Preview Gmail (str_BodyEmail)</span>
+        </div>
+
+        <div class="email-meta">
+          <div><span>To:</span> <strong id="metaTo"></strong></div>
+          <div><span>Subject:</span> <strong id="metaSubject"></strong></div>
+        </div>
+
+        <div id="emailPreview" class="email-preview-container">
+          <!-- Dirender secara dinamis via JavaScript -->
+        </div>
+      </section>
+
+      <!-- Generator Ekspresi VB.NET untuk UiPath -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="panel-title">4. Ekspresi VB.NET Siap Pakai (Copy ke Assign UiPath)</span>
+          <button class="btn btn-outline" id="btnCopyVb" style="flex: 0 0 auto; padding: 6px 12px; font-size: 0.7rem;">Copy VB.NET String</button>
+        </div>
+        <pre id="vbCodeOutput" class="code-box"></pre>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    // Data awal simulasi Google Sheets
+    const sheetRows = [
+      { row: 2, nama: "Budi Santoso", email: "budi.santoso@email.id", nik: "6306051204980001", status: "Valid", catatan: "16 digit NIK terverifikasi jelas & sesuai KK." },
+      { row: 3, nama: "Siti Aminah", email: "siti.aminah@email.id", nik: "6306058801990002", status: "Menunggu", catatan: "-" },
+      { row: 4, nama: "Ahmad Fauzi", email: "ahmad.fauzi@email.id", nik: "63060519001", status: "Tidak Valid", catatan: "Ekstraksi OCR hanya membaca 11 digit (KTP buram)." },
+      { row: 5, nama: "Rina Kartika", email: "rina.kartika@email.id", nik: "6306054509010004", status: "Menunggu", catatan: "-" }
+    ];
+
+    // Referensi DOM
+    const elRowIndex = document.getElementById('in_RowIndex');
+    const elNama = document.getElementById('in_NamaPendaftar');
+    const elEmail = document.getElementById('in_EmailPendaftar');
+    const elNik = document.getElementById('in_NIK_KTP');
+    const elStatus = document.getElementById('in_StatusVerifikasi');
+    const elCatatan = document.getElementById('in_CatatanAI');
+    const elSheetsBody = document.getElementById('sheetsBody');
+    const elMetaTo = document.getElementById('metaTo');
+    const elMetaSubject = document.getElementById('metaSubject');
+    const elEmailPreview = document.getElementById('emailPreview');
+    const elVbCodeOutput = document.getElementById('vbCodeOutput');
+    const elRobotStatus = document.getElementById('robotStatusText');
+
+    // Render Tabel Google Sheets
+    function renderSheetsTable(activeRowIndex) {
+      elSheetsBody.innerHTML = '';
+      sheetRows.forEach(item => {
+        const tr = document.createElement('tr');
+        if (item.row === activeRowIndex) tr.classList.add('active-row');
+
+        let badgeClass = '';
+        if (item.status === 'Valid') badgeClass = 'tag tag-valid';
+        else if (item.status === 'Tidak Valid') badgeClass = 'tag tag-invalid';
+        else badgeClass = 'tag';
+
+        tr.innerHTML = `
+          <td>#${item.row}</td>
+          <td>${item.nama}</td>
+          <td>${item.email}</td>
+          <td>${item.nik || 'Tidak Terbaca'}</td>
+          <td><span class="${badgeClass}">${item.status}</span></td>
+          <td>${item.catatan}</td>
+        `;
+        elSheetsBody.appendChild(tr);
+      });
+    }
+
+    // Bangun Template HTML Email (Inline CSS agar kompatibel dengan Gmail)
+    function buildEmailHtml(nama, nik, status, catatan) {
+      const isValid = status.trim().toUpperCase() === 'VALID';
+      const statusColor = isValid ? '#16a34a' : '#dc2626';
+      const headerLabel = isValid ? 'VERIFIKASI DISETUJUI' : 'VERIFIKASI DITOLAK';
+      const introText = isValid
+        ? 'Selamat! Pengajuan pendaftaran Bantuan Sosial (Bansos) Anda telah lolos verifikasi otomatis berbasis AI Document Understanding.'
+        : 'Mohon maaf, pengajuan Bantuan Sosial (Bansos) Anda belum dapat disetujui karena dokumen KTP tidak memenuhi kriteria validasi sistem.';
+      const closingText = isValid
+        ? 'Silakan menunggu informasi jadwal pencairan dana pada tahap berikutnya melalui email resmi ini.'
+        : 'Silakan lakukan pendaftaran ulang dengan mengunggah foto KTP asli yang terang, jelas, dan 16 digit NIK terlihat utuh.';
+
+      return `<div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; border: 1px solid #000000; padding: 24px; color: #000000; background-color: #ffffff;">
+  <div style="border-bottom: 2px solid #000000; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+    <strong style="font-size: 16px; letter-spacing: 0.5px;">PORTAL VERIFIKASI BANSOS TERPADU</strong>
+    <span style="font-size: 11px; font-weight: bold; padding: 4px 8px; border: 1px solid ${statusColor}; color: ${statusColor};">${headerLabel}</span>
+  </div>
+  <p style="font-size: 14px; margin-bottom: 14px;">Halo <strong>${nama}</strong>,</p>
+  <p style="font-size: 14px; line-height: 1.5; margin-bottom: 18px;">${introText}</p>
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 13px;">
+    <tr>
+      <td style="border: 1px solid #cccccc; padding: 8px 12px; background-color: #f8f8f8; width: 38%;"><strong>NIK Terdeteksi (AI)</strong></td>
+      <td style="border: 1px solid #cccccc; padding: 8px 12px; font-family: monospace;">${nik || 'Tidak Terbaca'}</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #cccccc; padding: 8px 12px; background-color: #f8f8f8;"><strong>Status Verifikasi</strong></td>
+      <td style="border: 1px solid #cccccc; padding: 8px 12px; color: ${statusColor}; font-weight: bold;">${status}</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #cccccc; padding: 8px 12px; background-color: #f8f8f8;"><strong>Catatan AI</strong></td>
+      <td style="border: 1px solid #cccccc; padding: 8px 12px;">${catatan}</td>
+    </tr>
+  </table>
+  <p style="font-size: 13px; line-height: 1.5; color: #333333; margin-bottom: 20px;">${closingText}</p>
+  <div style="border-top: 1px solid #e5e5e5; padding-top: 12px; font-size: 11px; color: #666666;">
+    Pesan ini dikirim secara otomatis oleh Robot RPA UiPath — Mohon tidak membalas email ini.
+  </div>
+</div>`;
+    }
+
+    // Bangun String Ekspresi VB.NET untuk UiPath Assign Activity
+    function buildVbNetExpression(status) {
+      const isValid = status.trim().toUpperCase() === 'VALID';
+      const statusColor = isValid ? '#16a34a' : '#dc2626';
+      const headerLabel = isValid ? 'VERIFIKASI DISETUJUI' : 'VERIFIKASI DITOLAK';
+      const introText = isValid
+        ? 'Selamat! Pengajuan pendaftaran Bantuan Sosial (Bansos) Anda telah lolos verifikasi otomatis berbasis AI Document Understanding.'
+        : 'Mohon maaf, pengajuan Bantuan Sosial (Bansos) Anda belum dapat disetujui karena dokumen KTP tidak memenuhi kriteria validasi sistem.';
+
+      return `"<div style='font-family:Arial,sans-serif;max-width:560px;border:1px solid #000;padding:24px;color:#000;background:#fff;'>" +
+"<div style='border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:20px;'>" +
+"<strong>PORTAL VERIFIKASI BANSOS TERPADU - ${headerLabel}</strong></div>" +
+"<p>Halo <b>" + in_NamaPendaftar + "</b>,</p>" +
+"<p>${introText}</p>" +
+"<table style='width:100%;border-collapse:collapse;margin:16px 0;font-size:13px;'>" +
+"<tr><td style='border:1px solid #ccc;padding:8px;background:#f8f8f8;'><b>NIK Terdeteksi</b></td>" +
+"<td style='border:1px solid #ccc;padding:8px;'>" + If(String.IsNullOrEmpty(in_NIK_KTP), "Tidak Terbaca", in_NIK_KTP) + "</td></tr>" +
+"<tr><td style='border:1px solid #ccc;padding:8px;background:#f8f8f8;'><b>Status Akhir</b></td>" +
+"<td style='border:1px solid #ccc;padding:8px;color:${statusColor};'><b>" + in_StatusVerifikasi + "</b></td></tr>" +
+"<tr><td style='border:1px solid #ccc;padding:8px;background:#f8f8f8;'><b>Catatan AI</b></td>" +
+"<td style='border:1px solid #ccc;padding:8px;'>" + in_CatatanAI + "</td></tr></table>" +
+"<p style='font-size:11px;color:#666;'>Dikirim otomatis oleh Robot RPA UiPath.</p></div>"`;
+    }
+
+    // Eksekusi Simulasi Update & Preview
+    function runSimulation() {
+      const rowIdx = parseInt(elRowIndex.value, 10) || 2;
+      const nama = elNama.value.trim();
+      const email = elEmail.value.trim();
+      const nik = elNik.value.trim();
+      const status = elStatus.value;
+      const catatan = elCatatan.value.trim();
+
+      elRobotStatus.textContent = `EXECUTING ROW #${rowIdx} // UPDATING SHEETS & GMAIL...`;
+
+      // Update baris di simulasi Google Sheets
+      const targetRow = sheetRows.find(r => r.row === rowIdx);
+      if (targetRow) {
+        targetRow.nama = nama;
+        targetRow.email = email;
+        targetRow.nik = nik;
+        targetRow.status = status;
+        targetRow.catatan = catatan;
+      }
+
+      renderSheetsTable(rowIdx);
+
+      // Update Meta & Preview Email
+      const isValid = status.trim().toUpperCase() === 'VALID';
+      const subjectPrefix = isValid ? '[DISETUJUI]' : '[DITOLAK]';
+      elMetaTo.textContent = email;
+      elMetaSubject.textContent = `${subjectPrefix} Hasil Verifikasi Pendaftaran Bansos - ${nama}`;
+      elEmailPreview.innerHTML = buildEmailHtml(nama, nik, status, catatan);
+
+      // Update VB.NET Expression Box
+      elVbCodeOutput.textContent = buildVbNetExpression(status);
+
+      setTimeout(() => {
+        elRobotStatus.textContent = `SUCCESS // ROW #${rowIdx} UPDATED & EMAIL SENT`;
+      }, 350);
+    }
+
+    // Event Listeners
+    document.getElementById('btnSimulate').addEventListener('click', runSimulation);
+
+    document.getElementById('btnPresetInvalid').addEventListener('click', () => {
+      elRowIndex.value = 4;
+      elNama.value = "Ahmad Fauzi";
+      elEmail.value = "ahmad.fauzi@email.id";
+      elNik.value = "63060519001";
+      elStatus.value = "Tidak Valid";
+      elCatatan.value = "Ekstraksi OCR hanya membaca 11 digit (Foto KTP buram/terpotong).";
+      runSimulation();
+    });
+
+    document.getElementById('btnCopyVb').addEventListener('click', (e) => {
+      navigator.clipboard.writeText(elVbCodeOutput.textContent);
+      const originalText = e.target.textContent;
+      e.target.textContent = "COPIED TO CLIPBOARD!";
+      setTimeout(() => {
+        e.target.textContent = originalText;
+      }, 1500);
+    });
+
+    // Inisialisasi saat halaman pertama kali dibuka
+    runSimulation();
+  </script>
+</body>
+</html>
